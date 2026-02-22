@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearSkies - Air Pollution Research & Monitoring Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="icon" href="./icons/logo.svg" type="image/svg+xml">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ClearSkies">
+    <script src="./pwa.js" defer></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .content-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .glass-panel {
+             background: rgba(10, 10, 10, 0.2);
+             backdrop-filter: blur(12px);
+             -webkit-backdrop-filter: blur(12px);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #aqi-recommendations ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+        #aqi-recommendations li {
+            position: relative;
+            padding-left: 1.5rem; /* Space for the icon */
+            margin-bottom: 0.5rem;
+        }
+        #aqi-recommendations li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981; /* Emerald green for checkmark */
+            font-weight: bold;
+        }
+        
+        /* CSS for the new navigation bar */
+        #navbar {
+            transition: background-color 0.4s ease-out, top 0.4s ease-out, width 0.4s ease-out, border-radius 0.4s ease-out;
+        }
+        .mobile-menu {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Hamburger Animation */
+        .hamburger-active .hamburger-line:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .hamburger-active .hamburger-line:nth-child(2) {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        .hamburger-active .hamburger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+        
+        /* Mobile Translate Styling */
+        .mobile-translate .goog-te-combo {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: rgba(55, 65, 81, 0.8);
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        .mobile-translate .goog-te-combo:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        /* Initial state for scroll animations */
+        .reveal-up {
+            opacity: 1;
+            transform: translateY(0px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        /* Login Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .login-modal {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(16, 185, 129, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(50px) scale(0.9);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .modal-overlay.show .login-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Enhanced form styles for modal */
+        .form-group {
+            position: relative;
+        }
+        
+        .form-input {
+            background: rgba(17, 24, 39, 0.7);
+            border: 2px solid rgba(75, 85, 99, 0.3);
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        
+        .form-input:focus {
+            border-color: #10B981;
+            background: rgba(17, 24, 39, 0.9);
+            box-shadow: 
+                0 0 0 4px rgba(16, 185, 129, 0.1),
+                0 10px 25px -5px rgba(16, 185, 129, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .form-label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: rgba(17, 24, 39, 0.9);
+            padding: 0 8px;
+            border-radius: 4px;
+        }
+        
+        .form-input:focus + .form-label,
+        .form-input:not(:placeholder-shown) + .form-label {
+            top: 0;
+            left: 12px;
+            font-size: 0.75rem;
+            color: #10B981;
+            background: rgba(17, 24, 39, 1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10B981, #059669);
+            border: none;
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 10px 25px -5px rgba(16, 185, 129, 0.4),
+                0 20px 40px -10px rgba(16, 185, 129, 0.2);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-skip {
+            background: rgba(75, 85, 99, 0.2);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-skip:hover {
+            background: rgba(75, 85, 99, 0.4);
+            border-color: rgba(75, 85, 99, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Ensure mobile menu doesn't cause overflow and is scrollable */
+        #mobile-menu {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Hero section mobile adjustments */
+        @media (max-width: 768px) {
+            .content-section {
+                padding: 1.5rem;
+                min-height: auto;
+                padding-top: 6rem;
+            }
+            #hero h2 {
+                font-size: 2.5rem;
+                line-height: 1.2;
+            }
+            .glass-panel {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Canvas for 3D background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- NEW Integrated Glass Navigation Bar -->
+    <nav id="navbar" class="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-5xl z-50 rounded-full border border-white/10 bg-black/20 shadow-2xl shadow-black/20 backdrop-blur-lg">
+        <div class="mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                  <a href="index.html" class="flex items-center space-x-2">
+                    <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+                  </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="index.html" class="px-4 py-2 text-emerald-400 font-bold transition-colors duration-300">Home</a>
+                    <a href="dashboard.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Dashboard</a>
+                    <a href="features.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Features</a>
+                    <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
+                    <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="relative p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 rounded-lg transition-all duration-200 hover:bg-white/10">
+                        <div class="w-6 h-6 flex flex-col justify-center items-center">
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gray-900/98 backdrop-blur-xl z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out hidden border-l border-gray-700/50 shadow-2xl">
+        <!-- Mobile Menu Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-700/50">
+            <div class="flex items-center">
+                <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+            </div>
+            <button id="mobile-menu-close" class="p-2 hover:bg-gray-800/50 rounded-xl transition-all duration-200 hover:scale-105">
+                <i data-lucide="x" class="w-6 h-6 text-gray-300"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu Content -->
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            <!-- Navigation Links -->
+            <div class="space-y-2 mb-6">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h3>
+                <a href="index.html" class="flex items-center py-3 px-4 text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl transition-all duration-200">
+                    <i data-lucide="home" class="w-5 h-5 mr-3"></i>
+                    <span>Home</span>
+                </a>
+                <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="features.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
+                    <span>Features</span>
+                </a>
+                <a href="how-it-works.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="info" class="w-5 h-5 mr-3"></i>
+                    <span>How It Works</span>
+                </a>
+                <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+                    <span>Contact</span>
+                </a>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3 mb-6">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"></h3>
+                <button id="install-pwa" class="install-button hidden w-full flex items-center justify-center py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all duration-200 font-medium">
+                    <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                    <span>Install App</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper">
+        <!-- Hero Section -->
+        <section id="hero" class="content-section text-center pt-32">
+            <h2 class="text-4xl md:text-6xl font-black tracking-wider mb-6 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Air Quality Visualize</h2>
+            <p class="text-lg md:text-xl max-w-4xl mx-auto mb-8 text-gray-300">Understanding the critical impact of air pollution on global health through comprehensive environmental monitoring and scientific research.</p>
+            
+            <!-- Air Pollution Study Brief -->
+            <div class="glass-panel p-6 md:p-8 rounded-2xl max-w-6xl w-full mb-12 text-left">
+                <h3 class="text-2xl md:text-3xl font-bold mb-6 text-center reveal-up">The Science Behind Air Pollution</h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Left Column: Key Statistics -->
+                    <div class="reveal-up">
+                        <h4 class="text-xl font-semibold mb-4 text-emerald-400">Critical Research Findings</h4>
+                        <div class="space-y-4">
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 mr-2"></i>
+                                    <span class="font-semibold">7 Million Deaths Annually</span>
+                                </div>
+                                <p class="text-sm text-gray-300">WHO studies show air pollution causes approximately 7 million premature deaths worldwide each year.</p>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="activity" class="w-5 h-5 text-orange-400 mr-2"></i>
+                                    <span class="font-semibold">91% Global Population</span>
+                                </div>
+                                <p class="text-sm text-gray-300">Research indicates 91% of the world's population lives in areas where air quality exceeds WHO guidelines.</p>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="heart-pulse" class="w-5 h-5 text-blue-400 mr-2"></i>
+                                    <span class="font-semibold">Cardiovascular Impact</span>
+                                </div>
+                                <p class="text-sm text-gray-300">Studies show PM2.5 exposure increases cardiovascular disease risk by 20-25% per 10 μg/m³ increase.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Pollution Sources -->
+                    <div class="reveal-up" style="--reveal-delay: 0.2s;">
+                        <h4 class="text-xl font-semibold mb-4 text-emerald-400">Major Pollution Sources</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="car" class="w-5 h-5 text-red-400 mr-3"></i>
+                                    <span>Transportation</span>
+                                </div>
+                                <span class="text-red-400 font-semibold">29%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="factory" class="w-5 h-5 text-orange-400 mr-3"></i>
+                                    <span>Industrial</span>
+                                </div>
+                                <span class="text-orange-400 font-semibold">21%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="zap" class="w-5 h-5 text-yellow-400 mr-3"></i>
+                                    <span>Energy Production</span>
+                                </div>
+                                <span class="text-yellow-400 font-semibold">25%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="home" class="w-5 h-5 text-green-400 mr-3"></i>
+                                    <span>Residential</span>
+                                </div>
+                                <span class="text-green-400 font-semibold">12%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="wind" class="w-5 h-5 text-blue-400 mr-3"></i>
+                                    <span>Natural Sources</span>
+                                </div>
+                                <span class="text-blue-400 font-semibold">13%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health Impact Studies -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.4s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400 text-center">Recent Scientific Studies</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="brain" class="w-8 h-8 text-purple-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Cognitive Impact</h5>
+                            <p class="text-sm text-gray-300">Harvard study (2023) links long-term PM2.5 exposure to 15% increased dementia risk.</p>
+                        </div>
+                        
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="baby" class="w-8 h-8 text-pink-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Child Development</h5>
+                            <p class="text-sm text-gray-300">UNICEF research shows air pollution affects brain development in 17 million infants globally.</p>
+                        </div>
+                        
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="dollar-sign" class="w-8 h-8 text-green-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Economic Cost</h5>
+                            <p class="text-sm text-gray-300">World Bank estimates global air pollution costs $5.7 trillion annually in welfare losses.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Call to Action -->
+                <div class="text-center reveal-up" style="--reveal-delay: 0.6s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Explore Air Quality Dashboard</h4>
+                    <p class="text-gray-300 mb-6">Access our comprehensive research findings and learn how air pollution affects your community and global health.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+                        <a href="dashboard.html" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 text-center">
+                            View Dashboard
+                        </a>
+                        
+                    </div>
+                </div>
+            </div>
+            
+           
+            
+            <!-- Comprehensive Air Pollution Information -->
+            <div class="glass-panel p-6 md:p-8 rounded-2xl max-w-6xl w-full mt-8 text-left">
+                <h3 class="text-2xl md:text-3xl font-bold mb-8 text-center reveal-up">Understanding Air Pollution: A Global Crisis</h3>
+                
+                <!-- What is Air Pollution Section -->
+                <div class="mb-8 reveal-up">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">What is Air Pollution?</h4>
+                    <div class="bg-gray-800/30 p-6 rounded-lg mb-6">
+                        <p class="text-gray-200 mb-4 leading-relaxed">
+                            Air pollution refers to the contamination of the atmosphere by harmful substances that pose risks to human health, wildlife, and the environment. These pollutants can be in the form of solid particles, liquid droplets, or gases, and they come from both natural sources (like volcanic eruptions and wildfires) and human activities (such as burning fossil fuels, industrial processes, and transportation).
+                        </p>
+                        <p class="text-gray-200 leading-relaxed">
+                            The World Health Organization defines air pollution as the contamination of indoor or outdoor air by any chemical, physical, or biological agent that modifies the natural characteristics of the atmosphere. When we breathe polluted air, these harmful substances enter our respiratory system and can cause immediate and long-term health effects.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Types of Air Pollutants -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.2s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Primary vs Secondary Pollutants</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-red-400 flex items-center">
+                                <i data-lucide="arrow-right" class="w-5 h-5 mr-2"></i>
+                                Primary Pollutants
+                            </h5>
+                            <p class="text-gray-200 mb-3">Emitted directly into the atmosphere from identifiable sources:</p>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Carbon Monoxide (CO):</strong> From vehicle exhaust and incomplete combustion</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Sulfur Dioxide (SO₂):</strong> From coal burning and industrial processes</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Nitrogen Oxides (NOₓ):</strong> From vehicle engines and power plants</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Particulate Matter:</strong> Dust, soot, and smoke particles</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-orange-400 flex items-center">
+                                <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>
+                                Secondary Pollutants
+                            </h5>
+                            <p class="text-gray-200 mb-3">Formed through chemical reactions between primary pollutants:</p>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Ground-level Ozone (O₃):</strong> Formed when NOₓ and VOCs react in sunlight</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Acid Rain:</strong> Forms when SO₂ and NOₓ combine with water vapor</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Secondary PM:</strong> Fine particles formed from gas-to-particle conversion</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Smog:</strong> Complex mixture of pollutants in urban areas</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health Impacts Section -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.4s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Health Impacts of Air Pollution</h4>
+                    <div class="bg-gray-800/30 p-6 rounded-lg mb-4">
+                        <p class="text-gray-200 mb-4 leading-relaxed">
+                            Air pollution is one of the world's largest environmental health risks, affecting virtually every organ in the human body. The health impacts range from minor irritations to serious chronic diseases and premature death.
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Short-term Effects -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-yellow-400 flex items-center">
+                                <i data-lucide="clock" class="w-5 h-5 mr-2"></i>
+                                Short-term Effects (Hours to Days)
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Eye, nose, and throat irritation</li>
+                                <li>• Coughing and sneezing</li>
+                                <li>• Shortness of breath</li>
+                                <li>• Headaches and fatigue</li>
+                                <li>• Worsening of asthma symptoms</li>
+                                <li>• Respiratory infections</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Long-term Effects -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-red-400 flex items-center">
+                                <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+                                Long-term Effects (Months to Years)
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Chronic respiratory diseases</li>
+                                <li>• Heart disease and stroke</li>
+                                <li>• Lung cancer</li>
+                                <li>• Reduced lung function</li>
+                                <li>• Premature aging of lungs</li>
+                                <li>• Increased mortality risk</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Vulnerable Groups -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-blue-400 flex items-center">
+                                <i data-lucide="users" class="w-5 h-5 mr-2"></i>
+                                Most Vulnerable Groups
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Children under 5 years</li>
+                                <li>• Adults over 65 years</li>
+                                <li>• Pregnant women</li>
+                                <li>• People with asthma/COPD</li>
+                                <li>• Individuals with heart disease</li>
+                                <li>• Outdoor workers</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Environmental Impact -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.6s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Environmental Consequences</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800/30 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-green-400">Ecosystem Damage</h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <i data-lucide="tree-pine" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                                    <span>Acid rain damages forests and soil chemistry</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="droplets" class="w-4 h-4 mt-1 mr-2 text-blue-400 flex-shrink-0"></i>
+                                    <span>Water body acidification affects aquatic life</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="leaf" class="w-4 h-4 mt-1 mr-2 text-yellow-400 flex-shrink-0"></i>
+                                    <span>Ozone reduces crop yields and plant growth</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="bug" class="w-4 h-4 mt-1 mr-2 text-purple-400 flex-shrink-0"></i>
+                                    <span>Biodiversity loss due to habitat degradation</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-gray-800/30 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-orange-400">Climate Effects</h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <i data-lucide="thermometer" class="w-4 h-4 mt-1 mr-2 text-red-400 flex-shrink-0"></i>
+                                    <span>Greenhouse gases contribute to global warming</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="cloud-rain" class="w-4 h-4 mt-1 mr-2 text-gray-400 flex-shrink-0"></i>
+                                    <span>Aerosols affect precipitation patterns</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="snowflake" class="w-4 h-4 mt-1 mr-2 text-cyan-400 flex-shrink-0"></i>
+                                    <span>Black carbon accelerates ice cap melting</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="wind" class="w-4 h-4 mt-1 mr-2 text-teal-400 flex-shrink-0"></i>
+                                    <span>Altered atmospheric circulation patterns</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Solutions and Prevention -->
+                <div class="reveal-up" style="--reveal-delay: 0.8s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Solutions and Prevention Strategies</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 p-4 rounded-lg border border-emerald-500/30">
+                            <i data-lucide="zap" class="w-8 h-8 text-emerald-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-emerald-300">Clean Energy</h5>
+                            <p class="text-xs text-gray-300">Transition to renewable energy sources like solar, wind, and hydroelectric power</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-blue-500/20 to-blue-600/20 p-4 rounded-lg border border-blue-500/30">
+                            <i data-lucide="car" class="w-8 h-8 text-blue-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-blue-300">Sustainable Transport</h5>
+                            <p class="text-xs text-gray-300">Electric vehicles, public transit, cycling, and walking reduce emissions</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-500/20 to-green-600/20 p-4 rounded-lg border border-green-500/30">
+                            <i data-lucide="recycle" class="w-8 h-8 text-green-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-green-300">Waste Management</h5>
+                            <p class="text-xs text-gray-300">Proper recycling and waste reduction minimize burning and landfill emissions</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-4 rounded-lg border border-purple-500/30">
+                            <i data-lucide="gavel" class="w-8 h-8 text-purple-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-purple-300">Policy & Regulation</h5>
+                            <p class="text-xs text-gray-300">Strong environmental laws and emission standards for industries</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 bg-gray-800/30 p-5 rounded-lg">
+                        <h5 class="font-semibold mb-3 text-emerald-400 flex items-center">
+                            <i data-lucide="lightbulb" class="w-5 h-5 mr-2"></i>
+                            Individual Actions You Can Take
+                        </h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>• Use public transportation or carpool</li>
+                                <li>• Choose energy-efficient appliances</li>
+                                <li>• Reduce, reuse, and recycle</li>
+                                <li>• Plant trees and maintain gardens</li>
+                            </ul>
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>• Avoid burning waste or leaves</li>
+                                <li>• Use eco-friendly products</li>
+                                <li>• Support clean energy initiatives</li>
+                                <li>• Stay informed and advocate for change</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+
+    <!-- Three.js and GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/ScrollTrigger.min.js"></script>
+    
+    <script>
+        window.onload = function() {
+            // Initialize Lucide icons first
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+                console.log('✅ Lucide icons initialized');
+            } else {
+                console.warn('⚠️ Lucide not loaded');
+            }
+            
+            // --- NEW Navigation Bar Logic ---
+            const navbar = document.getElementById('navbar');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+            function closeMobileMenu() {
+                mobileMenu.classList.add('translate-x-full');
+                setTimeout(() => mobileMenu.classList.add('hidden'), 300);
+                mobileMenuButton.classList.remove('hamburger-active');
+            }
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.remove('top-6', 'w-[95%]', 'rounded-full');
+                } else {
+                    navbar.classList.remove('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.add('top-6', 'w-[95%]', 'rounded-full');
+                }
+            });
+
+            mobileMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.remove('hidden');
+                    setTimeout(() => mobileMenu.classList.remove('translate-x-full'), 10);
+                    mobileMenuButton.classList.add('hamburger-active');
+                } else {
+                    closeMobileMenu();
+                }
+            });
+
+            mobileMenuClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeMobileMenu();
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!navbar.contains(e.target) && !mobileMenu.classList.contains('hidden')) {
+                    closeMobileMenu();
+                }
+            });
+            
+            mobileMenu.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+                    closeMobileMenu();
+                }
+            });
+
+            // --- 3D Background Setup & Animation ---
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.position.setZ(5);
+            const pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 15000;
+            const positions = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount * 3; i++) { positions[i] = (Math.random() - 0.5) * 100; }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.025, transparent: true, opacity: 0.7 });
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            // --- Parallax & Mouse Effect Logic ---
+            const mouse = new THREE.Vector2();
+            let scrollY = window.scrollY;
+
+            document.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            document.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Parallax effect on particles based on scroll
+                // Reduced multiplier to prevent stars from disappearing on long pages
+                particles.position.y += (-scrollY * 0.005 - particles.position.y) * 0.05;
+
+                // Mouse move effect on camera
+                camera.position.x += (mouse.x * 0.5 - camera.position.x) * 0.05;
+                camera.position.y += (-mouse.y * 0.5 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                particles.rotation.y += 0.0002;
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Initial Load & Scroll Animations ---
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // Reinitialize icons after animations
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 1000);
+            
+            gsap.from("#hero > h2, #hero > p, #hero > div", { 
+                duration: 1, 
+                opacity: 0, 
+                y: 50, 
+                stagger: 0.2, 
+                delay: 0.5, 
+                ease: "power3.out" 
+            });
+        };
+    </script>
+    <script src="./pwa.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - ClearSkies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="icon" href="./icons/logo.svg" type="image/svg+xml">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ClearSkies">
+    <script src="./pwa.js" defer></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .content-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .glass-panel {
+             background: rgba(10, 10, 10, 0.2);
+             backdrop-filter: blur(12px);
+             -webkit-backdrop-filter: blur(12px);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* CSS for the new navigation bar */
+        #navbar {
+            transition: background-color 0.4s ease-out, top 0.4s ease-out, width 0.4s ease-out, border-radius 0.4s ease-out;
+        }
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .mobile-menu.show {
+            transform: translateX(0);
+        }
+        
+        /* Initial state for scroll animations */
+        .reveal-up {
+            opacity: 1; /* Changed from 0 to ensure visibility if JS fails */
+            transform: translateY(0); /* Reset default transform */
+        }
+
+        /* Ensure mobile menu doesn't cause overflow and is scrollable */
+        #mobile-menu {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Hero section mobile adjustments */
+        @media (max-width: 768px) {
+            .content-section {
+                padding: 1.5rem;
+                min-height: auto;
+                padding-top: 6rem;
+            }
+            #features h3 {
+                font-size: 2.25rem;
+                line-height: 1.2;
+            }
+            .glass-panel {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- NEW Integrated Glass Navigation Bar -->
+    <nav id="navbar" class="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-5xl z-50 rounded-full border border-white/10 bg-black/20 shadow-2xl shadow-black/20 backdrop-blur-lg">
+        <div class="mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="index.html" class="flex items-center space-x-2">
+                    <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+                  </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="index.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Home</a>
+                    <a href="dashboard.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Dashboard</a>
+                    <a href="features.html" class="px-4 py-2 text-emerald-400 font-bold transition-colors duration-300">Features</a>
+                    <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
+                    <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="relative p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 rounded-lg transition-all duration-200 hover:bg-white/10">
+                        <div class="w-6 h-6 flex flex-col justify-center items-center">
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gray-900/98 backdrop-blur-xl z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out hidden border-l border-gray-700/50 shadow-2xl">
+        <!-- Mobile Menu Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-700/50">
+            <div class="flex items-center">
+                <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+            </div>
+            <button id="mobile-menu-close" class="p-2 hover:bg-gray-800/50 rounded-xl transition-all duration-200 hover:scale-105">
+                <i data-lucide="x" class="w-6 h-6 text-gray-300"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu Content -->
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            <!-- Navigation Links -->
+            <div class="space-y-2 mb-6">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h3>
+                <a href="index.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="home" class="w-5 h-5 mr-3"></i>
+                    <span>Home</span>
+                </a>
+                <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="features.html" class="flex items-center py-3 px-4 text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl transition-all duration-200">
+                    <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
+                    <span>Features</span>
+                </a>
+                <a href="how-it-works.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="info" class="w-5 h-5 mr-3"></i>
+                    <span>How It Works</span>
+                </a>
+                <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+                    <span>Contact</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-wrapper">
+        <section id="features" class="content-section pt-32 md:pt-40">
+            <div class="glass-panel p-8 md:p-12 rounded-2xl max-w-6xl text-center">
+                <h3 class="text-4xl font-bold mb-8 reveal-up">Our Platform's Capabilities</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 features-grid">
+                    <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="gauge-circle" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Real-Time Monitoring</h4>
+                        <p class="text-gray-300">Our system continuously monitors the Air Quality Index (AQI), temperature, and humidity using calibrated sensors and cloud synchronization.</p>
+                    </div>
+                     <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="sun" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Smart Solar Tracking</h4>
+                        <p class="text-gray-300">This maximizes solar panel efficiency throughout the day by tracking the sun’s movement and adjusting panel angles accordingly.</p>
+                    </div>
+                    <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="trending-up" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Data Trend Visualization</h4>
+                        <p class="text-gray-300">In the dashboard, we provide data trends for AQI tracking and temperature & humidity patterns for visual analytics.</p>
+                    </div>                 
+                    <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="activity" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Device Health Analytics</h4>
+                        <p class="text-gray-300">Monitor the health and performance of device in real-time, ensuring optimal operation and longevity.</p>
+                    </div>
+                    <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="heart-pulse" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Personalized Health Advice</h4>
+                        <p class="text-gray-300">The system analyzes real-time AQI levels to provide personalized health recommendations such as wearing masks, staying indoors, or using air purifiers.</p>
+                    </div>
+                    <div class="flex flex-col items-center p-4 feature-card">
+                        <i data-lucide="bar-chart-3" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Cloud-Based Dashboard</h4>
+                        <p class="text-gray-300">Access real-time data and insights from anywhere through our cloud-based dashboard, enabling informed decisions and efficient management.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/ScrollTrigger.min.js"></script>
+    <script>
+        window.onload = function() {
+            lucide.createIcons();
+            
+            // --- Navigation Bar Logic ---
+            const navbar = document.getElementById('navbar');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.remove('top-6', 'w-[95%]', 'rounded-full');
+                } else {
+                    navbar.classList.remove('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.add('top-6', 'w-[95%]', 'rounded-full');
+                }
+            });
+
+            mobileMenuButton?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenu.classList.add('show');
+                }, 10);
+            });
+            
+            mobileMenuClose?.addEventListener('click', () => {
+                mobileMenu.classList.remove('show');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+                    mobileMenu.classList.remove('show');
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                    }, 300);
+                }
+            });
+
+            // --- 3D Background Logic ---
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('bg-canvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.position.setZ(5);
+            const pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 15000;
+            const positions = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 100; 
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0xaaaaaa, size: 0.025, transparent: true, opacity: 0.7
+            });
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+            
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                particles.rotation.y += 0.0002;
+                renderer.render(scene, camera);
+            }
+            animate();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Scroll Animations ---
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Re-hide elements before animating them in with GSAP
+            gsap.set(".reveal-up", { opacity: 0, y: 50 });
+            gsap.set(".feature-card", { opacity: 0, y: 40 });
+
+            gsap.to(".reveal-up", {
+                scrollTrigger: {
+                    trigger: "#features",
+                    start: "top 80%",
+                },
+                y: 0,
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            });
+            
+            gsap.to(".feature-card", {
+                scrollTrigger: {
+                    trigger: ".features-grid",
+                    start: "top 85%",
+                },
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                stagger: 0.15,
+                ease: "power1.out"
+            });
+        };
+    </script>
+    <script src="pwa.js"></script>
+</body>
+</html>
+
+

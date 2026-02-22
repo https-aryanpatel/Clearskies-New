@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - ClearSkies</title>
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="./firebase-config.js"></script>
+
+  <!-- UI libs -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+	<link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="icon" href="./icons/logo.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ClearSkies">
+  <script src="./pwa.js" defer></script>
+
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #111827;
+      color: #F9FAFB;
+    }
+    #content-wrapper { position: relative; z-index: 1; }
+    #bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .signal-container {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  height: 40px;
+}
+
+.signal-bar {
+  width: 10px;
+  background: gray;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+/* Poor */
+.signal-bar.poor {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+/* Fair */
+.signal-bar.fair {
+  background: #f97316;
+  box-shadow: 0 0 6px #f97316;
+}
+
+/* Good */
+.signal-bar.good {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+/* Excellent */
+.signal-bar.excellent {
+  background: #00ffcc;
+  box-shadow: 0 0 8px #00ffcc;
+}
+
+#bar1 { height: 10px; }
+#bar2 { height: 20px; }
+#bar3 { height: 30px; }
+#bar4 { height: 40px; }
+
+.active {
+  background: #00ffcc;
+  box-shadow: 0 0 10px #00ffcc;
+}
+
+.signal-bar.active
+{
+  background: #00ffcc;
+  box-shadow: 0 0 8px #00ffcc;
+}
+ /* Navigation Styles */
+        #navbar {
+            transition: all 0.4s ease-out;
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(20px);
+        }
+        
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .mobile-menu.show {
+            transform: translateX(0);
+        }
+
+        /* Ensure mobile menu doesn't cause overflow and is scrollable */
+        #mobile-menu {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #content-wrapper {
+                padding-top: 6rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .glass-panel {
+                padding: 1.25rem;
+            }
+            #navbar {
+                top: 0;
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+    
+  </style>
+</head>
+
+<body>
+     <!-- 3D Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- Navigation Bar -->
+    <nav id="navbar" class="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-5xl z-50 rounded-full border border-white/10 shadow-2xl shadow-black/20">
+        <div class="mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="index.html" class="flex items-center space-x-2">
+                    <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="index.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Home</a>
+                    <a href="dashboard.html" class="px-4 py-2 text-emerald-400 font-bold transition-colors duration-300">Dashboard</a>
+                    <a href="features.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Features</a>
+                    <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
+                    <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="relative p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 rounded-lg transition-all duration-200 hover:bg-white/10">
+                        <div class="w-6 h-6 flex flex-col justify-center items-center">
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu (moved outside nav to fix stacking context) -->
+    <div id="mobile-menu" class="mobile-menu md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gray-900/98 backdrop-blur-xl z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out hidden border-l border-gray-700/50 shadow-2xl">
+        <!-- Mobile Menu Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-700/50">
+            <div class="flex items-center">
+                <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+            </div>
+            <button id="mobile-menu-close" class="p-2 hover:bg-gray-800/50 rounded-xl transition-all duration-200 hover:scale-105">
+                <i data-lucide="x" class="w-6 h-6 text-gray-300"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu Content -->
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            <!-- Navigation Links -->
+            <div class="space-y-2 mb-6">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h3>
+                <a href="index.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="home" class="w-5 h-5 mr-3"></i>
+                    <span>Home</span>
+                </a>
+                <a href="dashboard.html" class="flex items-center py-3 px-4 text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl transition-all duration-200">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="features.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
+                    <span>Features</span>
+                </a>
+                <a href="how-it-works.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="info" class="w-5 h-5 mr-3"></i>
+                    <span>How It Works</span>
+                </a>
+                <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                    <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+                    <span>Contact</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+  <!-- Content -->
+  <div id="content-wrapper" class="pt-32 pb-10 px-4 md:px-8">
+    <header class="max-w-7xl mx-auto mb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold text-white">Dashboard</h1>
+          <p class="text-gray-300 mt-1">Monitor air quality and environmental metrics</p>
+          <!-- Location removed -->
+        </div>
+      </div>
+    </header>
+
+    <!-- Top cards -->
+    <section class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+	      <!-- AQI -->
+      <div class="glass-panel p-5">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-gray-400 text-sm font-medium">Air Quality Index</div>
+            <div class="mt-2 flex items-center gap-3">
+              <div id="aqiText" class="stat-value text-4xl font-extrabold text-white">--</div>
+              <span id="aqiBadge" class="px-2 py-1 bg-gray-600 text-gray-100 text-xs font-medium rounded">--</span>
+            </div>
+          </div>
+          <i data-lucide="wind" class="w-6 h-6 text-emerald-400"></i>
+        </div>
+        <div class="mt-4" id="aqi-gauge"></div>
+      </div>
+
+      <!-- Temperature -->
+      <div class="glass-panel p-5">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-gray-400 text-sm font-medium">Temperature</div>
+            <div class="mt-2 stat-value text-4xl font-extrabold text-white">
+              <span id="tempText">--</span><span class="text-2xl">°C</span>
+            </div>
+          </div>
+          <i data-lucide="thermometer" class="w-6 h-6 text-orange-400"></i>
+        </div>
+        <div class="mt-4" id="temp-gauge"></div>
+
+      </div>
+
+      <!-- Humidity -->
+      <div class="glass-panel p-5">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-gray-400 text-sm font-medium">Humidity</div>
+            <div class="mt-2 stat-value text-4xl font-extrabold text-white">
+              <span id="humidityText">--</span><span class="text-2xl">%</span>
+            </div>
+          </div>
+          <i data-lucide="droplets" class="w-6 h-6 text-sky-400"></i>
+        </div>
+        <div class="mt-4" id="humidity-gauge"></div>
+      </div>
+
+      <!-- Solar -->
+      <div class="glass-panel p-5">
+
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-3">
+    <div class="text-gray-400 text-sm font-medium">
+      Solar System
+    </div>
+    <i data-lucide="sun" class="w-6 h-6 text-yellow-400"></i>
+  </div>
+
+  <!-- Servo Angle -->
+  <div class="text-2xl font-bold text-white mb-2">
+    Servo Angle: <span id="servoText">--</span>°
+  </div>
+
+  
+</div>
+
+     <!-- ESP32 System Status -->
+<div class="glass-panel p-5">
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="text-gray-400 text-sm font-medium">ESP32 System</div>
+
+      <div class="mt-2 flex items-center gap-2">
+        <span id="esp32-status"
+              class="px-3 py-1 rounded-full text-xs font-semibold 
+                     bg-gray-700 text-gray-200">
+          ESP32: --
+        </span>
+      </div>
+
+      <div class="mt-3 text-sm text-gray-300">
+        Restart Count:
+        <span id="restartText" class="font-semibold text-white">--</span>
+      </div>
+
+      
+    </div>
+
+    <i data-lucide="cpu" class="w-6 h-6 text-emerald-400"></i>
+  </div>
+</div>
+
+<div class="glass-panel p-5">
+
+  <!-- Heading + Icon Row -->
+  <div class="flex justify-between items-center mb-3">
+
+    <!-- Heading -->
+    <div class="text-gray-400 text-sm font-medium">
+      Wifi Signal
+    </div>
+
+    <!-- Wifi Icon (Top Right) -->
+    <i data-lucide="wifi" class="w-6 h-6 text-green-400"></i>
+
+  </div>
+
+  <!-- Signal Bars -->
+  <div class="flex justify-center mb-3">
+    <div class="flex items-end gap-1 h-10">
+      <div id="bar1" class="signal-bar w-2 h-3 bg-gray-500 rounded"></div>
+      <div id="bar2" class="signal-bar w-2 h-5 bg-gray-500 rounded"></div>
+      <div id="bar3" class="signal-bar w-2 h-7 bg-gray-500 rounded"></div>
+      <div id="bar4" class="signal-bar w-2 h-9 bg-gray-500 rounded"></div>
+    </div>
+  </div>
+
+  <!-- RSSI and Quality -->
+  <div class="flex justify-center text-sm">
+    <div id="wifiText" class="text-white font-semibold">
+      -- dBm
+    </div>
+  </div>
+
+</div>
+
+    </section>
+
+    <!-- Health Recommendations -->
+    <section class="max-w-7xl mx-auto mb-8">
+      <div class="glass-panel p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-white font-semibold text-lg">Health Recommendations</h2>
+            <p class="text-gray-400 text-sm mt-1">Based on live AQI readings</p>
+
+            <div class="mt-4 space-y-2">
+              <div class="text-gray-200 text-sm">
+                <span class="text-gray-400">Category:</span>
+                <span id="aqiCategory" class="font-semibold">--</span>
+              </div>
+
+              <ul id="healthTips" class="list-disc pl-5 text-gray-200 text-sm space-y-1">
+                <li>Waiting for AQI data...</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <i data-lucide="heart-pulse" class="w-6 h-6 text-pink-400"></i>
+            <span id="healthBadge"
+                  class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-gray-200">
+              --
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="glass-panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-white font-semibold">AQI Trend</h2>
+          <span class="text-gray-400 text-sm">Live rolling plot</span>
+        </div>
+        <div id="aqi-trend-chart"></div>
+      </div>
+
+      <div class="glass-panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-white font-semibold">Temperature & Humidity</h2>
+          <span class="text-gray-400 text-sm">Live rolling plot</span>
+        </div>
+        <div id="temp-humidity-chart"></div>
+      </div>
+    </section>
+
+    <footer class="max-w-7xl mx-auto mt-10 text-center text-gray-500 text-sm">
+      ESP32 | DHT11 | MQ135 | Firebase Realtime Database
+    </footer>
+  </div>
+
+  <!-- Firebase config (loaded from firebase-config.js) -->
+  <script>
+    if (window.FIREBASE_CONFIG && !firebase.apps.length) {
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+    } else if (!window.FIREBASE_CONFIG) {
+      console.error('Missing FIREBASE_CONFIG. Create firebase-config.js from firebase-config.example.js');
+    }
+  </script>
+
+  <!-- Charts init (global) -->
+  <script>
+    const aqiGaugeOptions = {
+      series: [0],
+      chart: { height: 120, type: 'radialBar', offsetY: -10, sparkline: { enabled: true } },
+      plotOptions: {
+        radialBar: {
+          startAngle: -90, endAngle: 90,
+          track: { background: '#333', strokeWidth: '97%', margin: 5 },
+          dataLabels: {
+            name: { show: false },
+            value: { offsetY: -2, fontSize: '18px', color: '#eee', formatter: (val) => `${Math.round(val)}` }
+          },
+          hollow: { margin: 0, size: '50%' }
+        }
+      },
+      stroke: { lineCap: 'round' }
+    };
+    window.aqiGauge = new ApexCharts(document.querySelector('#aqi-gauge'), aqiGaugeOptions);
+    window.aqiGauge.render();
+
+    const humidityGaugeOptions = {
+      series: [0],
+      chart: { height: 120, type: 'radialBar', offsetY: -10, sparkline: { enabled: true } },
+      plotOptions: {
+        radialBar: {
+          startAngle: -90, endAngle: 90,
+          track: { background: '#333', strokeWidth: '97%', margin: 5 },
+          dataLabels: {
+            name: { show: false },
+            value: { offsetY: -2, fontSize: '18px', color: '#eee', formatter: (val) => `${Math.round(val)}%` }
+          },
+          hollow: { margin: 0, size: '50%' }
+        }
+      },
+      stroke: { lineCap: 'round' }
+    };
+    window.humidityGauge = new ApexCharts(document.querySelector('#humidity-gauge'), humidityGaugeOptions);
+    window.humidityGauge.render();
+
+    const aqiTrendOptions = {
+      series: [{ name: 'AQI', data: [0,0,0,0,0,0,0] }],
+      chart: { height: 250, type: 'line', zoom: { enabled: false }, toolbar: { show: false }, background: 'transparent' },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 3 },
+      grid: { borderColor: 'rgba(255,255,255,0.1)' },
+      xaxis: { categories: ['1','2','3','4','5','6','7'], labels: { style: { colors: '#9ca3af' } } },
+      yaxis: { min: 0, max: 300, labels: { style: { colors: '#9ca3af' } } },
+      tooltip: { theme: 'dark' }
+    };
+    window.aqiTrendChart = new ApexCharts(document.querySelector('#aqi-trend-chart'), aqiTrendOptions);
+    window.aqiTrendChart.render();
+
+    const tempHumidityOptions = {
+      series: [
+        { name: 'Temperature', type: 'line', data: [0,0,0,0,0,0,0,0] },
+        { name: 'Humidity', type: 'area', data: [0,0,0,0,0,0,0,0] }
+      ],
+      chart: { height: 250, type: 'line', toolbar: { show: false }, background: 'transparent' },
+      stroke: { curve: 'smooth', width: [3, 2] },
+      fill: { type: ['solid', 'gradient'], gradient: { shade: 'dark', type: 'vertical', shadeIntensity: 0.3, inverseColors: true, opacityFrom: 0.4, opacityTo: 0.1, stops: [0,100] } },
+      grid: { borderColor: 'rgba(255,255,255,0.1)' },
+      xaxis: { categories: ['Now','+1','+2','+3','+4','+5','+6','+7'], labels: { style: { colors: '#9ca3af' } } },
+      yaxis: [
+        { min: 0, max: 60, labels: { style: { colors: '#9ca3af' } } },
+        { opposite: true, min: 0, max: 100, labels: { style: { colors: '#9ca3af' } } }
+      ],
+      tooltip: { theme: 'dark' }
+    };
+    window.tempHumidityChart = new ApexCharts(document.querySelector('#temp-humidity-chart'), tempHumidityOptions);
+    window.tempHumidityChart.render();
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // --- 3D Background Logic ---
+    (function() {
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({
+          canvas: document.getElementById('bg-canvas'),
+          antialias: true,
+          alpha: true
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.position.setZ(5);
+      
+      const pointLight = new THREE.PointLight(0xffffff, 1.5);
+      pointLight.position.set(5, 5, 5);
+      scene.add(pointLight);
+      
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+      
+      const particleGeometry = new THREE.BufferGeometry();
+      const particleCount = 15000;
+      const positions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i++) {
+          positions[i] = (Math.random() - 0.5) * 100; 
+      }
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const particleMaterial = new THREE.PointsMaterial({
+          color: 0xaaaaaa, size: 0.025, transparent: true, opacity: 0.7
+      });
+      const particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+      
+      function animate() {
+          requestAnimationFrame(animate);
+          particles.rotation.y += 0.0002;
+          renderer.render(scene, camera);
+      }
+      animate();
+      
+      window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    })();
+
+    // --- Navigation Bar & Mobile Menu Logic ---
+    window.addEventListener('load', () => {
+        const navbar = document.getElementById('navbar');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                navbar.classList.remove('top-6', 'w-[95%]', 'rounded-full');
+            } else {
+                navbar.classList.remove('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                navbar.classList.add('top-6', 'w-[95%]', 'rounded-full');
+            }
+        });
+
+        mobileMenuButton?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenu.classList.add('show');
+            }, 10);
+        });
+        
+        mobileMenuClose?.addEventListener('click', () => {
+            mobileMenu.classList.remove('show');
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+        });
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+                mobileMenu.classList.remove('show');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
+            }
+        });
+    });
+  </script>
+  <script>
+
+const tempGaugeOptions = {
+  series: [0],
+  chart: {
+    height: 120,
+    type: 'radialBar',
+    offsetY: -10,
+    sparkline: { enabled: true }
+  },
+  plotOptions: {
+    radialBar: {
+      startAngle: -90,
+      endAngle: 90,
+      track: {
+        background: '#333',
+        strokeWidth: '97%',
+        margin: 5
+      },
+      dataLabels: {
+        name: { show: false },
+        value: {
+          offsetY: -2,
+          fontSize: '18px',
+          color: '#eee',
+          formatter: function(val) {
+            return Math.round(val) + "°C";
+          }
+        }
+      },
+      hollow: {
+        margin: 0,
+        size: '50%'
+      }
+    }
+  },
+  stroke: {
+    lineCap: 'round'
+  }
+};
+
+window.tempGauge =
+  new ApexCharts(document.querySelector("#temp-gauge"), tempGaugeOptions);
+
+window.tempGauge.render();
+
+</script>
+<script>
+const servoGaugeOptions = {
+  series: [0],
+  chart: {
+    type: 'radialBar',
+    height: 120,
+    sparkline: { enabled: true }
+  },
+  plotOptions: {
+    radialBar: {
+      startAngle: -90,
+      endAngle: 90,
+      hollow: { size: '50%' },
+      dataLabels: {
+        value: {
+          formatter: function(val) {
+            return val + "°";
+          }
+        }
+      }
+    }
+  },
+  colors: ['#facc15']
+};
+
+window.servoGauge =
+  new ApexCharts(document.querySelector("#servo-gauge"), servoGaugeOptions);
+
+window.servoGauge.render();
+</script>
+<script>
+  const database = firebase.database();
+
+  const wifiRef = database.ref("/status/wifi_rssi");
+
+  wifiRef.on("value", function(snapshot) {
+    const rssi = snapshot.val();
+
+    if (rssi !== null) {
+      document.getElementById("wifiText").innerText = rssi + " dBm";
+      updateSignalBars(rssi);
+    }
+  });
+
+  function updateSignalBars(rssi)
+{
+  const bars = [
+    document.getElementById("bar1"),
+    document.getElementById("bar2"),
+    document.getElementById("bar3"),
+    document.getElementById("bar4")
+  ];
+
+  // reset
+  bars.forEach(bar => {
+    bar.classList.remove("poor", "fair", "good", "excellent");
+  });
+
+  let qualityClass = "poor";
+  let activeBars = 1;
+
+  if (rssi > -80)
+  {
+    qualityClass = "fair";
+    activeBars = 2;
+  }
+
+  if (rssi > -70)
+  {
+    qualityClass = "good";
+    activeBars = 3;
+  }
+
+  if (rssi > -60)
+  {
+    qualityClass = "excellent";
+    activeBars = 4;
+  }
+
+  // apply color and activate bars
+  for (let i = 0; i < activeBars; i++)
+  {
+    bars[i].classList.add(qualityClass);
+  }
+}
+  function updateSignalQuality(rssi)
+{
+  let quality = "Poor";
+  let color = "#ef4444";
+
+  if (rssi > -80)
+  {
+    quality = "Fair";
+    color = "#f97316";
+  }
+
+  if (rssi > -70)
+  {
+    quality = "Good";
+    color = "#22c55e";
+  }
+
+  if (rssi > -60)
+  {
+    quality = "Excellent";
+    color = "#00ffcc";
+  }
+
+  const text = document.getElementById("wifiQuality");
+  text.innerText = quality;
+  text.style.color = color;
+}
+</script>
+
+
+  <script src="script.js"></script>
+  <script src="pwa.js"></script>
+  <script> lucide.createIcons(); </script>
+</body>
+</html>
+
+
