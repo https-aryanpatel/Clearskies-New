@@ -15,6 +15,40 @@
     <meta name="apple-mobile-web-app-title" content="ClearSkies">
     <script src="./pwa.js" defer></script>
     <style>
+        #splash-screen {
+  position: fixed;
+  inset: 0;
+  background: #000000; /* Pure black */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.splash-container {
+  text-align: center;
+}
+
+/* Logo */
+.splash-logo {
+  width: clamp(350px, 120vw, 270px);
+  height: auto;
+}
+
+/* App Name */
+.app-name {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* Smooth exit only */
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
         body {
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
@@ -280,7 +314,16 @@
     </style>
 </head>
 <body class="bg-gray-900 text-white">
+<div id="splash-screen">
 
+  <div class="splash-container">
+
+    <img src="logo.png" class="splash-logo">
+
+
+  </div>
+
+</div>
     <!-- Canvas for 3D background -->
     <canvas id="bg-canvas"></canvas>
 
@@ -735,6 +778,38 @@
             </div>
         </section>
     </div>
+
+    <script>
+
+window.addEventListener("load", () => {
+
+  const splash = document.getElementById("splash-screen");
+
+  // Check if splash already shown
+  if (sessionStorage.getItem("splashShown")) {
+    
+    splash.remove(); // remove immediately
+    return;
+
+  }
+
+  // Mark splash as shown
+  sessionStorage.setItem("splashShown", "true");
+
+  // Show splash for 2 seconds
+  setTimeout(() => {
+
+    splash.classList.add("fade-out");
+
+    setTimeout(() => {
+      splash.remove();
+    }, 800);
+
+  }, 2200);
+
+});
+
+</script>
     
 
     <!-- Three.js and GSAP for animations -->
