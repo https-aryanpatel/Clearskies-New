@@ -51,10 +51,6 @@
             padding: 2rem;
             position: relative;
         }
-        .reveal-up {
-            opacity: 0;
-            transform: translateY(50px);
-        }
         .glass-panel {
             background: rgba(17, 24, 39, 0.7);
             backdrop-filter: blur(12px);
@@ -304,20 +300,37 @@
             });
             
             // --- Scroll Animations ---
-            gsap.registerPlugin(ScrollTrigger);
-            gsap.utils.toArray('.reveal-up').forEach((elem) => {
-                gsap.from(elem, {
-                    scrollTrigger: {
-                        trigger: '.reveal-container',
-                        start: 'top 85%',
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 0.8,
-                    ease: 'power2.out',
-                    delay: parseFloat(elem.style.getPropertyValue('--reveal-delay') || 0)
+            if (window.gsap && window.ScrollTrigger) {
+                gsap.registerPlugin(ScrollTrigger);
+
+                gsap.utils.toArray('.reveal-up').forEach((elem) => {
+                    gsap.fromTo(
+                        elem,
+                        { y: 50, opacity: 0 },
+                        {
+                            y: 0,
+                            opacity: 1,
+                            duration: 0.8,
+                            ease: 'power2.out',
+                            delay: parseFloat(elem.style.getPropertyValue('--reveal-delay') || 0),
+                            immediateRender: false,
+                            scrollTrigger: {
+                                trigger: elem,      // use each element, not shared container
+                                start: 'top 90%',
+                                once: true
+                            }
+                        }
+                    );
                 });
-            });
+
+                ScrollTrigger.refresh();
+            } else {
+                // Fallback: never leave content hidden
+                document.querySelectorAll('.reveal-up').forEach((elem) => {
+                    elem.style.opacity = '1';
+                    elem.style.transform = 'none';
+                });
+            }
         };
     </script>
 
@@ -354,4 +367,3 @@
     
 </body>
 </html>
-
