@@ -1,100 +1,139 @@
 🌍 ClearSkies – Smart Air Quality Monitoring System
 
+
+
 ClearSkies is an IoT-based air quality monitoring and visualization platform that uses ESP32 and environmental sensors to collect real-time pollution data and display it on a web dashboard. The system helps users monitor air quality, analyze environmental conditions, and promote awareness about air pollution.
+
+
 
 🔗 Live Website: https://https-aryanpatel.github.io/Clearskies-New/
 
+
+
 📌 Features
+
+
 
 📊 Real-time Air Quality Monitoring
 
+
+
 🌐 Live Web Dashboard Visualization
+
+
 
 📡 ESP32 WiFi Data Transmission
 
+
+
 📈 AQI Data Display with Metrics
+
+
 
 📶 WiFi Signal Strength Monitoring (RSSI)
 
+
+
 ☀️ Solar-Powered System Support
+
+
 
 🌎 Environmental Awareness Platform
 
-🧠 System Architecture
-Air Quality Sensors → ESP32 → WiFi → Server/Database → Website Dashboard → User
+
+
+🧠 System Architecture Air Quality Sensors → ESP32 → WiFi → Server/Database → Website Dashboard → User
+
+
 
 ⚙️ Hardware Components
 
-ESP32 Microcontroller
 
-MQ135 Air Quality Sensor
 
-PM2.5 Sensor (optional)
+* ESP32 Microcontroller
 
-Temperature & Humidity Sensor (optional)
+* MQ135 Air Quality Sensor
 
-Solar Panel (optional)
+* PM2.5 Sensor (optional)
+ 
+* Temperature \& Humidity Sensor 
 
-Battery Module
+* Solar Panel 
 
-Connecting Wires
+* Battery Module
+
+* Connecting Wires
+
 
 
 💻 Software Technologies Used
 
-HTML
 
-CSS
 
-JavaScript
+* HTML
 
-ESP32 Arduino Programming
+* CSS
 
-Firebase / Web Server
+* JavaScript
 
-GitHub Pages (Hosting)
+* Arduino IDE
+
+* Firebase / Web Server
+
+* GitHub Pages (Hosting)
+
 
 
 📊 Dashboard Features
 
-Real-time AQI data display
 
-WiFi signal strength monitoring
 
-Environmental statistics
+* Real-time AQI data display
 
-Pollution awareness information
+* WiFi signal strength monitoring
 
-Responsive modern UI
+* Environmental statistics
+
+* Pollution awareness information
+
+* Responsive modern UI
+
 
 
 🔄 System Workflow
 
-Sensors collect air quality data
 
-ESP32 reads and processes sensor values
 
-ESP32 connects to WiFi
+* Sensors collect air quality data
 
-Data is sent to server/database
+* ESP32 reads and processes sensor values
 
-Website fetches the data
+* ESP32 connects to WiFi
 
-Dashboard displays AQI information
+* Data is sent to server/database
+
+* Website fetches the data
+
+* Dashboard displays AQI information
+
 
 
 🎯 Project Purpose
 
-Monitor environmental pollution
 
-Provide real-time AQI data
 
-Support IoT-based smart monitoring
+* Monitor environmental pollution
 
-Promote environmental awareness
+* Provide real-time AQI data
+
+* Support IoT-based smart monitoring
+
+* Promote environmental awareness
+
 
 
 👨‍💻 Author
+
 
 Aryan Patel
 
