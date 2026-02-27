@@ -344,10 +344,20 @@
                     <a href="features.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Features</a>
                     <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
                     <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
+                    <!-- Theme Toggle (desktop) -->
+                    <button class="theme-toggle-btn p-2 text-white rounded-lg hover:bg-white/10 transition-all duration-200" aria-label="Toggle light/dark theme" title="Toggle theme">
+                        <svg class="icon-moon w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>
+                        <svg class="icon-sun w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    </button>
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <div class="md:hidden flex items-center">
+                <div class="md:hidden flex items-center space-x-1">
+                    <!-- Theme Toggle (mobile) -->
+                    <button class="theme-toggle-btn p-2 text-white rounded-lg hover:bg-white/10 transition-all duration-200" aria-label="Toggle light/dark theme" title="Toggle theme">
+                        <svg class="icon-moon w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>
+                        <svg class="icon-sun w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    </button>
                     <button id="mobile-menu-button" class="relative p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 rounded-lg transition-all duration-200 hover:bg-white/10">
                         <div class="w-6 h-6 flex flex-col justify-center items-center">
                             <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out"></span>
@@ -956,6 +966,7 @@ window.addEventListener("load", () => {
         };
     </script>
     <script src="./pwa.js"></script>
+    <script src="./theme.js"></script>
 </body>
 </html>
 
