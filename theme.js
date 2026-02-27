@@ -6,6 +6,8 @@
 (function () {
   'use strict';
 
+  var CLOUD_COUNT = 8; /* matches c1-c8 CSS cloud classes */
+
   /* ─── 1.  Apply saved theme immediately (before paint) ────────────────── */
   var saved = localStorage.getItem('clearskies-theme') || 'dark';
   if (saved === 'light') {
@@ -141,7 +143,7 @@
     sun.className = 'sky-sun';
     bg.appendChild(sun);
     /* Clouds */
-    for (var i = 1; i <= 8; i++) {
+    for (var i = 1; i <= CLOUD_COUNT; i++) {
       var c = document.createElement('div');
       c.className = 'sky-cloud c' + i;
       bg.appendChild(c);
@@ -152,12 +154,13 @@
   /* ─── 4.  Toggle handler ───────────────────────────────────────────────── */
   function applyTheme(isLight) {
     var canvas = document.getElementById('bg-canvas');
+    var lb = document.getElementById('light-bg');
     if (isLight) {
       createLightBg();
-      document.getElementById('light-bg').style.display = 'block';
+      lb = lb || document.getElementById('light-bg');
+      if (lb) lb.style.display = 'block';
       if (canvas) canvas.style.display = 'none';
     } else {
-      var lb = document.getElementById('light-bg');
       if (lb) lb.style.display = 'none';
       if (canvas) canvas.style.display = 'block';
     }
